@@ -3,8 +3,9 @@
 
 // run this to see how it looks again
 params.reads = 
-"/scratch/rj931/tf_sle_project/all_sle_data/454-Mock*cut*_{R1,R2}*.fastq.gz"
+"/scratch/rj931/tf_sle_project/all_sle_data/45*-Mock*cut*_{R1,R2}*.fastq.gz"
 
+params.bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
 
 FASTP='fastp/intel/0.20.1'
 FASTQC='fastqc/0.11.9'
@@ -12,12 +13,22 @@ BWA='bwa/intel/0.7.17'
 SAMTOOLS='samtools/intel/1.14'
 
 
+// i want to put all the filt files into a dir so i can get them in the next process
 
 params.outdir = 'filt_files'
 
-params.filts = "filt_files/454-Mock*cut*_{R1,R2}*.filt*"
+params.filts = "filt_files/45*-Mock*cut*_{R1,R2}*.filt*"
+
+//Channel
+//	.watchPath('filt_files', 'create,modify')
+//	.filter { it.name ==~ params.filts}
+//	.until { it} 
+//	.set {filt_pe}
 
 nextflow.enable.dsl=2
+
+
+PE_reads = Channel.fromFilePairs(params.reads, checkIfExists: true)
 
 process fastp {
 
@@ -51,7 +62,58 @@ fastp \
 
 }
 
+
+
+
+params.outdir2 = "bg_filt_files"
+params.bg_filts = "bg_filt_files/461-IgG*cut*_{R1,R2}*.fq.gz"
+
+//Channel
+//	.watchPath('bg_filt_files', 'create,modify')
+//	.filter { it.name ==~ params.bg_filts }
+//	.take(12)
+//	.set {bg_reads}
+
+bg_reads = Channel.fromFilePairs(params.bg_regions, checkIfExists: true)
+
+process bg_fastp{
+
+publishDir params.outdir2, mode: 'copy'
+
+input:
+tuple val(pair_id), path(bg_reads)
+
+output:
+path "${pair_id}_R1.filt.fq.gz", emit: bg_filt_out_f
+path "${pair_id}_R2.filt.fq.gz", emit: bg_filt_out_r
+
+"""
+#!/bin/env bash
+
+module load $FASTP
+
+fastp \
+-i ${bg_reads[0]} \
+-I ${bg_reads[1]} \
+-o $pair_id'_R1.filt.fq.gz' \
+-O $pair_id'_R2.filt.fq.gz' \
+--detect_adapter_for_pe \
+--trim_front1 7 \
+--trim_front2 7 \
+"""
+
+}
+
+
+
+
+
+filt_pe = Channel.fromFilePairs(params.filts) 
+params.outdir4 = "store_normal_bam_files"
+
 process bwa {
+publishDir params.outdir4, mode: 'copy'
+
 
 input:
 val ref
@@ -59,7 +121,7 @@ tuple val(pair_id), path(filt_pe)
 
 
 output:
-path "${pair_id}.bam", emit: bam_file
+path "${pair_id}_sort.bam", emit: bam_file
 
 """
 #!/bin/env bash
@@ -76,12 +138,94 @@ bwa sampe $ref ${filt_pe[0]}'reads_1.sai' ${filt_pe[1]}'reads_2.sai' ${filt_pe[0
 > ${pair_id}'aligned_reads.sam'
 
 samtools view -b -h -q 20 ${pair_id}'aligned_reads.sam' -o $pair_id'.bam'
+samtools sort $pair_id'.bam' -o $pair_id'_sort.bam' -O bam
+samtools index -b $pair_id'_sort.bam'
+
 """
 }
 
 
-PE_reads = Channel.fromFilePairs(params.reads, checkIfExists: true)
-filt_pe = Channel.fromFilePairs(params.filts, checkIfExists: true)
+
+bg_filt = Channel.fromFilePairs(params.bg_filts)
+params.outdir3 = "bg_sort_bam_files"
+
+
+process bg_bwa {
+
+publishDir params.outdir3, mode: 'copy'
+
+input:
+val ref
+tuple val(pair_id), path(bg_filt)
+
+output:
+path "${pair_id}_sort.bam", emit: bg_bam
+
+"""
+#!/bin/env bash
+
+module load $BWA
+module load $SAMTOOLS
+
+bwa index -a bwtsw $ref
+
+bwa aln -t 8 $ref ${bg_filt[0]} > ${bg_filt[0]}'reads_1.sai'
+bwa aln -t 8 $ref ${bg_filt[1]} > ${bg_filt[1]}'reads_2.sai'
+
+bwa sampe $ref ${bg_filt[0]}'reads_1.sai' ${bg_filt[1]}'reads_2.sai' ${bg_filt[0]} ${bg_filt[1]} \
+> ${pair_id}'aligned_reads.sam'
+
+samtools view -b -h -q 20 ${pair_id}'aligned_reads.sam' -o $pair_id'.bam'
+
+samtools sort $pair_id'.bam' -o $pair_id'_sort.bam' -O bam
+samtools index -b $pair_id'_sort.bam'
+
+"""
+
+
+}
+
+
+
+// now i want to make a process for creating tag directories
+// need to make the files into a list and sort by name
+// then the transpose operator will make them into a tuple
+// the combine operator does it for the file paths but it is not in order
+
+//kd_bam_list = Channel.fromPath("store_normal_bam_files/454*bam").toSortedList{it.name}
+//ctr_bam_list = Channel.fromPath("store_normal_bam_files/455*bam").toSortedList{it.name}
+
+
+bam_files = Channel.fromFilePairs("store_normal_bam_files/{454,455}-Mock-n{1,2,3}*_S{1,2,15,16,29,30}_L00{1,2}_sort.bam")
+bam_files.view()
+
+process bam_files {
+
+
+"""
+cd store_normal_bam_files
+
+ls 454* > kd_bam.txt
+ls 455* > ctr_bam.txt
+paste kd_bam.txt ctr_bam.txt > kd_ctr_bam.txt 
+
+"""
+
+}
+
+
+//bam_tuple = kd_bam_list.combine(ctr_bam_list)
+
+
+//kd_bam = Channel.fromList(kd_bam_list)
+//ctr_bam = Channel.fromList(ctr_bam_list)
+
+
+
+//kd_ctr_pair = kd_bam_list.merge(ctr_bam_list)
+
+
+
 
 workflow{
 
@@ -92,11 +236,17 @@ ref = Channel.value(params.ref)
 
 //PE_reads.view()
 //filt_pe.view()
+//bg_filt.view()
+//kd_bam_list.view()
+//bam_tuple.view()
 main:
 
 fastp(PE_reads)
+bg_fastp(bg_reads)
 bwa(ref, filt_pe)
+bg_bwa(ref, bg_filt)
+//homer( bam_tuple)
 //fastp.out.fastp_out_f.view()
 //fastp.out.fastp_out_r.view()
-bwa.out.bam_file.view()
+//bwa.out.bam_file.view()
 }
