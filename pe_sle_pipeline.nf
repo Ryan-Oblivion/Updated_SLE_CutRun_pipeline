@@ -11,7 +11,7 @@ FASTP='fastp/intel/0.20.1'
 FASTQC='fastqc/0.11.9'
 BWA='bwa/intel/0.7.17'
 SAMTOOLS='samtools/intel/1.14'
-
+MULTIQC='multiqc/1.9'
 
 // i want to put all the filt files into a dir so i can get them in the next process
 
@@ -49,6 +49,7 @@ path "${pair_id}_R2.filt.fq.gz", emit: fastp_out_r
 #!/bin/env bash
 
 module load $FASTP
+module load $FASTQC
 
 fastp \
 -i ${PE_reads[0]} \
@@ -58,6 +59,17 @@ fastp \
 --detect_adapter_for_pe \
 --trim_front1 7 \
 --trim_front2 7 \
+
+fastqc $pair_id'_R1.filt.fq.gz' $pair_id'_R2.filt.fq.gz'
+
+# since this script is running somewhere in the work directory I need to figure out how to find where all the qc files are
+
+#find ./../.. -name *fastqc.zip > fastqc_files.txt
+
+#module load $MULTIQC
+
+#multiqc -force --file-list fastqc_files.txt --filename 'multiqc_report.html'
+
 """
 
 }

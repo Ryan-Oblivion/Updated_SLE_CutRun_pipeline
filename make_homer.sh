@@ -9,17 +9,17 @@
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=rj931@nyu.edu
 #SBATCH --output=slurm_%j.out
-#SBATCH --array=1
+#SBATCH --array=1-6
 
 
 cd store_normal_bam_files
 
+#rm kd_bam.txt ctr_bam.txt bg_region.txt kd_ctr_bg_bam.txt
 
 
-
-ls 454* > kd_bam.txt
-ls 455* > ctr_bam.txt
-ls ../bg_sort_bam_files/ > bg_region.txt
+ls 454*.bam > kd_bam.txt
+ls 455*.bam > ctr_bam.txt
+ls ../bg_sort_bam_files/*.bam > bg_region.txt
 paste kd_bam.txt ctr_bam.txt bg_region.txt > kd_ctr_bg_bam.txt
 
 path_to_bg='../bg_sort_bam_files/'
@@ -48,4 +48,4 @@ echo $path_to_bg$bam_bg
 
 ref="/scratch/work/courses/BI7653/hw3.2023/hg38/Homo_sapiens.GRCh38.dna_sm.primary_assembly.normalized.fa"
 
-findMotifsGenome.pl $bam_kd'_peaks.txt' $ref $bam_kd'motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
+findMotifsGenome.pl $bam_kd'_peaks.txt' $ref $bam_kd'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 

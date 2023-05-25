@@ -22,6 +22,15 @@ module load nextflow/23.04.1
 
 nextflow run -resume pe_sle_pipeline.nf
 nextflow run -resume pe_sle_pipeline.nf
+
+
+
+find . -name *fastqc.zip > fastqc_files.txt
+
+module load multiqc/1.9
+
+multiqc -force --file-list fastqc_files.txt --filename 'multiqc_report.html'
+
 #nextflow run -resume pe_sle_pipeline.nf
 
 # here i want to out put the genomic regions
@@ -34,3 +43,8 @@ nextflow run -resume pe_sle_pipeline.nf
 #--outdir "bg_filt" \
 #--filts "bg_filt/461-IgG*cut*_{R1,R2}*.fastq.gz" \
 
+
+
+# this section is to run the make_homer.sh script part of the pipeline
+
+sbatch make_homer.sh
