@@ -43,6 +43,13 @@ findPeaks $bam_kd'_tag_dir/' -style factor -i $bam_ctr'_tag_dir/' -o $bam_kd'_pe
 
 findPeaks $bam_bg'_tag_dir/' -style factor -o $bam_bg'_bg_peaks.txt'
 
+#now i want to convert peaks.txt files into bed files, so i can use them in R CHIC package
+
+pos2bed.pl $bam_kd'_peaks.txt' > $bam_kd'_peakfile.bed'
+
+pos2bed.pl $bam_bg'_bg_peaks.txt' > $bam_bg'_bg_peakfile.bed'
+
+
 echo $bam_bg
 echo $path_to_bg$bam_bg
 
