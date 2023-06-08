@@ -5,7 +5,7 @@
 #SBATCH --partition=cm
 #SBATCH --time=10:00:00
 #SBATCH --mem=10GB
-#SBATCH --job-name=test_nf
+#SBATCH --job-name=homer
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=rj931@nyu.edu
 #SBATCH --output=slurm_%j.out
@@ -56,6 +56,7 @@ findPeaks $bam_bg'_tag_dir/' -style factor -o $bam_bg'_bg_peaks.txt'
 pos2bed.pl $bam_kd'_peaks.txt' > $bam_kd'_peakfile.bed'
 
 # added this one line for the conversion of the new control peak to bed
+
 pos2bed.pl $bam_ctr'_peaks.txt' > $bam_ctr'_peakfile.bed'
 
 pos2bed.pl $bam_bg'_bg_peaks.txt' > $bam_bg'_bg_peakfile.bed'
@@ -70,3 +71,47 @@ findMotifsGenome.pl $bam_kd'_peaks.txt' $ref $bam_kd'_motifOutput/' -size 200 -b
 
 # added this new line to see the motifs in the control also. maybe if the above works, this would be needed
 findMotifsGenome.pl $bam_ctr'_peaks.txt' $ref $bam_ctr'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt'
+
+mkdir genes_downstream
+
+
+
+# now I want to use bedtools to find the genes downstream of the peaks.
+# i needed to get a gene gtf file that was created from a sorted gff file taken from ncbi. and unzip it. 
+#here is the path to it
+
+gtf_genes='/scratch/rj931/tf_sle_project/gene_annotations_format_sorted.gtf'
+
+# now we load bedtools and continue
+
+module load bedtools/intel/2.29.2
+
+# here i want to get the intersection of peaks that appear in both the knockdown and 
+# control peak files
+# we do not want to find intersection between kd and ctr anymore
+#bedtools intersect -a $bam_kd'_peakfile.bed' -b $bam_ctr'_peakfile.bed' -f 0.50 -r > $bam_kd'_'$bam_ctr'_both.bed'
+
+
+# sort the kd and ctr bed files separately  
+
+sort -k1,1 -k2,2n $bam_kd'_peakfile.bed' > $bam_kd'_sorted_final.bed'
+sort -k1,1 -k2,2n $bam_ctr'_peakfile.bed' > $bam_ctr'_sorted_final.bed'
+
+
+# then i take that intersection and fine genes that appear immediately downstream of 
+# the peaks 
+
+# option -d is to report the distance of b from a as an extra column, overlapping will be 0
+# option -io ignore features in B that overlap A. we want close not touching features
+# option -iu ignore features in B that are upstream of features in A
+# option -t how to determine between a tie. i want all
+# the -iu option requires -D option with 'a' as the orientation
+
+# now we find the genes downstream of the peaks in the knockdown and control sorted bed files separately
+
+bedtools closest -d -io -iu -t all -D a -a $bam_kd'_sorted_final.bed' -b $gtf_genes > \
+'./genes_downstream/'$bam_kd'_.genes.nearest.txt'
+
+bedtools closest -d -io -iu -t all -D a -a $bam_ctr'_sorted_final.bed' -b $gtf_genes > \
+'./genes_downstream/'$bam_ctr'_.genes.nearest.txt'
+
