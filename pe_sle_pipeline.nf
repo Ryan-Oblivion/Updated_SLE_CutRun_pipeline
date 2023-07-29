@@ -57,8 +57,11 @@ fastp \
 -o $pair_id'_R1.filt.fq.gz' \
 -O $pair_id'_R2.filt.fq.gz' \
 --detect_adapter_for_pe \
---trim_front1 7 \
---trim_front2 7 \
+--correction
+
+# trying the correction option to correct mismatched base pairs in overlapped regions of paired end reads
+#--trim_front1 7 \
+#--trim_front2 7 \
 
 fastqc $pair_id'_R1.filt.fq.gz' $pair_id'_R2.filt.fq.gz'
 
@@ -110,13 +113,33 @@ fastp \
 -o $pair_id'_R1.filt.fq.gz' \
 -O $pair_id'_R2.filt.fq.gz' \
 --detect_adapter_for_pe \
---trim_front1 7 \
---trim_front2 7 \
+--correction
+
+# trying correction for the same reason explained above in the previous process
+#--trim_front1 7 \
+#--trim_front2 7 \
 """
 
 }
 
+process bwa_index {
+    input:
+    val ref
 
+    output:
+    path "connect_process.txt", emit: bwa_index_end
+
+    script:
+    
+    """
+    #!/bin/env bash
+    module load $BWA
+
+    bwa index -a $ref
+
+    touch connect_process.txt
+    """
+}
 
 
 
@@ -130,6 +153,7 @@ publishDir params.outdir4, mode: 'copy'
 input:
 val ref
 tuple val(pair_id), path(filt_pe)
+val index_end_file
 
 
 output:
@@ -141,7 +165,7 @@ path "${pair_id}_sort.bam", emit: bam_file
 module load $BWA
 module load $SAMTOOLS
 
-bwa index -a bwtsw $ref
+#bwa index -a bwtsw $ref
 
 bwa aln -t 8 $ref ${filt_pe[0]} > ${filt_pe[0]}'reads_1.sai'
 bwa aln -t 8 $ref ${filt_pe[1]} > ${filt_pe[1]}'reads_2.sai'
@@ -169,6 +193,7 @@ publishDir params.outdir3, mode: 'copy'
 input:
 val ref
 tuple val(pair_id), path(bg_filt)
+val index_end_file
 
 output:
 path "${pair_id}_sort.bam", emit: bg_bam
@@ -179,7 +204,7 @@ path "${pair_id}_sort.bam", emit: bg_bam
 module load $BWA
 module load $SAMTOOLS
 
-bwa index -a bwtsw $ref
+#bwa index -a bwtsw $ref
 
 bwa aln -t 8 $ref ${bg_filt[0]} > ${bg_filt[0]}'reads_1.sai'
 bwa aln -t 8 $ref ${bg_filt[1]} > ${bg_filt[1]}'reads_2.sai'
@@ -255,8 +280,9 @@ main:
 
 fastp(PE_reads)
 bg_fastp(bg_reads)
-bwa(ref, filt_pe)
-bg_bwa(ref, bg_filt)
+bwa_index(ref)
+bwa(ref, filt_pe, bwa_index.out.bwa_index_end)
+bg_bwa(ref, bg_filt, bwa_index.out.bwa_index_end)
 //homer( bam_tuple)
 //fastp.out.fastp_out_f.view()
 //fastp.out.fastp_out_r.view()

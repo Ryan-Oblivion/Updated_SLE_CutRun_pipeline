@@ -12,6 +12,25 @@
 
 
 
+# DIRECTIONS TO ALTER THE INPUT OF THE PAIR END READS AND ALSO THE BACKGROUND GENOMIC DATA (BG)
+
+# this is what the pipeline has by defualt , only change bg regions if you have your own. which is required
+
+# MOCK READS
+# params.reads = "/scratch/rj931/tf_sle_project/all_sle_data/45*-Mock*cut*_{R1,R2}*.fastq.gz"
+# params.filts = "filt_files/45*-Mock*cut*_{R1,R2}*.filt*"
+# params.bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
+
+# IAV READS
+# reads = "/scratch/rj931/tf_sle_project/all_sle_data/45*-IAV*cut*_{R1,R2}*.fastq.gz"
+# filts = "filt_files/45*-IAV*cut*_{R1,R2}*.filt*"
+# bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
+
+# BLEO READS
+# reads = "/scratch/rj931/tf_sle_project/all_sle_data/45*-Bleo*cut*_{R1,R2}*.fastq.gz"
+# filts = "filt_files/45*-Bleo*cut*_{R1,R2}*.filt*"
+# bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
+
 module purge
 
 module load nextflow/23.04.1
@@ -20,8 +39,10 @@ module load nextflow/23.04.1
 # so now that they exist the pipeline can move on, how to fix this and make it run
 # or check the directories again instead
 
-nextflow run -resume pe_sle_pipeline.nf
-nextflow run -resume pe_sle_pipeline.nf
+nextflow run -resume pe_sle_pipeline.nf  --reads "/scratch/rj931/tf_sle_project/all_sle_data/45*-Bleo*cut*_{R1,R2}*.fastq.gz" --filts "filt_files/45*-Bleo*cut*_{R1,R2}*.filt*"
+nextflow run -resume pe_sle_pipeline.nf  --reads "/scratch/rj931/tf_sle_project/all_sle_data/45*-Bleo*cut*_{R1,R2}*.fastq.gz" --filts "filt_files/45*-Bleo*cut*_{R1,R2}*.filt*"
+
+
 
 
 

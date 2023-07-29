@@ -55,34 +55,38 @@ findPeaks $bam_bg'_tag_dir/' -style factor -o $bam_bg'_bg_peaks.txt'
 
 # need to change the chromosome number from just number to chr number
 
-cat $bam_kd'_peaks.txt' | awk -F '\t' -vOFS='\t' '{$2 = "chr" $2 }1' > $bam_kd'_chr_peaks.txt'
+#cat $bam_kd'_peaks.txt' | awk -F '\t' -vOFS='\t' '{$2 = "chr" $2 }1' > $bam_kd'_chr_peaks.txt'
 
-cat $bam_ctr'_peaks.txt' | awk -F '\t' -vOFS='\t' '{$2 = "chr" $2 }1' > $bam_ctr'_chr_peaks.txt'
+#cat $bam_ctr'_peaks.txt' | awk -F '\t' -vOFS='\t' '{$2 = "chr" $2 }1' > $bam_ctr'_chr_peaks.txt'
 
-cat $bam_bg'_bg_peaks.txt' | awk -F '\t' -vOFS='\t' '{$2 = "chr" $2 }1' > $bam_bg'_chr_bg_peaks.txt'
+#cat $bam_bg'_bg_peaks.txt' | awk -F '\t' -vOFS='\t' '{$2 = "chr" $2 }1' > $bam_bg'_chr_bg_peaks.txt'
 
 
 #now i want to convert peaks.txt files into bed files, so i can use them in R CHIC package
 
-pos2bed.pl $bam_kd'_chr_peaks.txt' > $bam_kd'_peakfile.bed'
+pos2bed.pl $bam_kd'_peaks.txt' > $bam_kd'_peakfile.bed'
 
 # added this one line for the conversion of the new control peak to bed
 
-pos2bed.pl $bam_ctr'_chr_peaks.txt' > $bam_ctr'_peakfile.bed'
+pos2bed.pl $bam_ctr'_peaks.txt' > $bam_ctr'_peakfile.bed'
 
-pos2bed.pl $bam_bg'_chr_bg_peaks.txt' > $bam_bg'_bg_peakfile.bed'
+pos2bed.pl $bam_bg'_bg_peaks.txt' > $bam_bg'_bg_peakfile.bed'
 
 
 
 echo $bam_bg
 echo $path_to_bg$bam_bg
 
-ref="/scratch/work/courses/BI7653/hw3.2023/hg38/Homo_sapiens.GRCh38.dna_sm.primary_assembly.normalized.fa"
+#ref="/scratch/work/courses/BI7653/hw3.2023/hg38/ref_genome"
+#ref="/scratch/work/courses/BI7653/hw3.2023/hg38/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa" 
 
-findMotifsGenome.pl $bam_kd'_chr_peaks.txt' $ref $bam_kd'_motifOutput/' -size 200 -bg $bam_bg'_chr_bg_peaks.txt' 
+# try the same ref genome from the RNA seq pipeline I downloaded from gencode
+ref='/scratch/rj931/tf_sle_project/GRCh38.primary_assembly.genome.fa'
+
+findMotifsGenome.pl $bam_kd'_peaks.txt' $ref $bam_kd'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
 
 # added this new line to see the motifs in the control also. maybe if the above works, this would be needed
-findMotifsGenome.pl $bam_ctr'_chr_peaks.txt' $ref $bam_ctr'_motifOutput/' -size 200 -bg $bam_bg'_chr_bg_peaks.txt'
+findMotifsGenome.pl $bam_ctr'_peaks.txt' $ref $bam_ctr'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt'
 
 # make an annotation file 
 # using the peaks.txt files because there is little guess work on if its in the correct format
@@ -90,15 +94,29 @@ findMotifsGenome.pl $bam_ctr'_chr_peaks.txt' $ref $bam_ctr'_motifOutput/' -size 
 # annotation options in homer
 # also removed the -gtf $gtf_genes option. This resulted in many columns being NA
 
-gtf_genes='/scratch/rj931/tf_sle_project/hg38.knownGene.gtf.gz'
+#gtf_genes='/scratch/rj931/tf_sle_project/hg38.knownGene.gtf.gz'
+# use the gtf file i downloaded and parsed from the rna seq pipeline
+gtf_genes='/scratch/rj931/tf_sle_project/test_this.gtf'
+
 
 mkdir annotated_genes_ds
 
-annotatePeaks.pl $bam_kd'_chr_peaks.txt' $ref -gtf $gtf_genes > $bam_kd'_annotated.tsv'
+annotatePeaks.pl $bam_kd'_peaks.txt' $ref -gtf $gtf_genes > $bam_kd'_annotated.tsv'
 
-annotatePeaks.pl  $bam_ctr'_chr_peaks.txt' $ref -gtf $gtf_genes > $bam_ctr'_annotated.tsv'
+annotatePeaks.pl  $bam_ctr'_peaks.txt' $ref -gtf $gtf_genes > $bam_ctr'_annotated.tsv'
 
 mv $bam_kd'_annotated.tsv' $bam_ctr'_annotated.tsv' annotated_genes_ds 
+
+
+##############
+# test
+#############
+#annotatePeaks.pl $bam_kd'_chr_peaks.txt' hg38 > $bam_kd'_annotated.tsv'
+
+#annotatePeaks.pl  $bam_ctr'_chr_peaks.txt' hg38 > $bam_ctr'_annotated.tsv'
+
+#mv $bam_kd'_annotated.tsv' $bam_ctr'_annotated.tsv' annotated_genes_ds
+
 
 #########################################
 #mkdir genes_downstream
@@ -109,11 +127,11 @@ mv $bam_kd'_annotated.tsv' $bam_ctr'_annotated.tsv' annotated_genes_ds
 # i needed to get a gene gtf file that was created from a sorted gff file taken from ncbi. and unzip it. 
 #here is the path to it
 
-#gtf_genes='/scratch/rj931/tf_sle_project/gene_annotations_format_sorted.gtf'
+#gtf_genes='/scratch/rj931/tf_sle_project/'
 
 # now we load bedtools and continue
 
-#module load bedtools/intel/2.29.2
+module load bedtools/intel/2.29.2
 
 # here i want to get the intersection of peaks that appear in both the knockdown and 
 # control peak files
@@ -123,8 +141,8 @@ mv $bam_kd'_annotated.tsv' $bam_ctr'_annotated.tsv' annotated_genes_ds
 
 # sort the kd and ctr bed files separately  
 
-#sort -k1,1 -k2,2n $bam_kd'_peakfile.bed' > $bam_kd'_sorted_final.bed'
-#sort -k1,1 -k2,2n $bam_ctr'_peakfile.bed' > $bam_ctr'_sorted_final.bed'
+sort -k1,1 -k2,2n $bam_kd'_peakfile.bed' > $bam_kd'_sorted_final.bed'
+sort -k1,1 -k2,2n $bam_ctr'_peakfile.bed' > $bam_ctr'_sorted_final.bed'
 
 
 # then i take that intersection and fine genes that appear immediately downstream of 
@@ -144,3 +162,13 @@ mv $bam_kd'_annotated.tsv' $bam_ctr'_annotated.tsv' annotated_genes_ds
 #bedtools closest -d -io -iu -t all -D a -a $bam_ctr'_sorted_final.bed' -b $gtf_genes > \
 #'./genes_downstream/'$bam_ctr'_.genes.nearest.txt'
 
+
+###########
+#test above 
+##########
+
+#bedtools closest -d -io -iu -t all -D a $bam_kd'_sorted_final.bed' -b $gtf_genes > \
+#'./genes_downstream/'$bam_kd'_.genes.nearest.txt'
+
+#bedtools closest -d -io -iu -t all -D a -a $bam_ctr'_sorted_final.bed' -b $gtf_genes > \
+#'./genes_downstream/'$bam_ctr'_.genes.nearest.txt'
