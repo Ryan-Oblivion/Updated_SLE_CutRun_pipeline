@@ -19,6 +19,9 @@ module load r/gcc/4.3.1
 
 #singularity run /scratch/rj931/containers/r_container.sif
 
+#condition_name='mock'
+#condition_name='iav'
+condition_name='bleo'
 
 kd_tag_dir='store_normal_bam_files/454*bam_tag_dir/'
 ctr_tag_dir='store_normal_bam_files/455*bam_tag_dir/'
@@ -50,14 +53,20 @@ gtf_genes='/scratch/rj931/tf_sle_project/test_this.gtf'
 mkdir differential_peak_analysis
 
 getDifferentialPeaksReplicates.pl -t $kd_tag_dir \
--b $ctr_tag_dir \
+-b $bg_tag_dir \
+-i $ctr_tag_dir \
 -genome $ref \
 -style factor \
--balanced \
+-q 0.05 \
 -gtf $gtf_genes \
 -DESeq2 > outputPeaks_2.txt
 
-annotatePeaks.pl 'outputPeaks_2.txt' $ref -gtf $gtf_genes > 'differential_peak_analysis/differential_peaks_annotated_kd_vs_ctr.tsv'
+annotatePeaks.pl 'outputPeaks_2.txt' $ref -gtf $gtf_genes > 'differential_peak_analysis/differential_'$condition_name'_peaks_annotated_kd_vs_ctr.tsv'
+
+
+findPeaks $bg_tag_dir -style factor -o $condition_name'_bg_peaks.txt'
+
+findMotifsGenome.pl 'outputPeaks_2.txt' $ref $condition_name'_combined_diff_analysis_motifOutput/' -size 200 -bg $condition_name'_bg_peaks.txt'
 
 #findMotifsGenome.pl 'outputPeaks_2.txt' $ref 'combined_diff_analysis_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
 

@@ -69,3 +69,7 @@ multiqc -force --file-list fastqc_files.txt --filename 'multiqc_report.html'
 # this section is to run the make_homer.sh script part of the pipeline
 
 sbatch make_homer.sh
+
+# here I want to combine the tag directories for knockdown and control to make one peak file that contains 
+# differentially expressed peaks from each replicate
+sbatch homer_anno_combined.sh
