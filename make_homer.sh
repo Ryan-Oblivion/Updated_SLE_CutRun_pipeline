@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=cm
 #SBATCH --time=10:00:00
-#SBATCH --mem=10GB
+#SBATCH --mem=30GB
 #SBATCH --job-name=homer
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=rj931@nyu.edu
@@ -83,10 +83,10 @@ echo $path_to_bg$bam_bg
 # try the same ref genome from the RNA seq pipeline I downloaded from gencode
 ref='/scratch/rj931/tf_sle_project/GRCh38.primary_assembly.genome.fa'
 
-findMotifsGenome.pl $bam_kd'_peaks.txt' $ref $bam_kd'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
+#findMotifsGenome.pl $bam_kd'_peaks.txt' $ref $bam_kd'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
 
 # added this new line to see the motifs in the control also. maybe if the above works, this would be needed
-findMotifsGenome.pl $bam_ctr'_peaks.txt' $ref $bam_ctr'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt'
+#findMotifsGenome.pl $bam_ctr'_peaks.txt' $ref $bam_ctr'_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt'
 
 # make an annotation file 
 # using the peaks.txt files because there is little guess work on if its in the correct format

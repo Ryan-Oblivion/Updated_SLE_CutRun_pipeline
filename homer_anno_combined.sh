@@ -64,9 +64,14 @@ getDifferentialPeaksReplicates.pl -t $kd_tag_dir \
 annotatePeaks.pl 'outputPeaks_2.txt' $ref -gtf $gtf_genes > 'differential_peak_analysis/differential_'$condition_name'_peaks_annotated_kd_vs_ctr.tsv'
 
 
+# i jsut need to pool together all the target directories and then find motifs
+findPeaks $kd_tag_dir -style factor -o $condition_name'_kd_peaks.txt'
+findPeaks $ctr_tag_dir -style factor -o $condition_name'_ctr_peaks.txt'
 findPeaks $bg_tag_dir -style factor -o $condition_name'_bg_peaks.txt'
 
-findMotifsGenome.pl 'outputPeaks_2.txt' $ref $condition_name'_combined_diff_analysis_motifOutput/' -size 200 -bg $condition_name'_bg_peaks.txt'
+findMotifsGenome.pl $condition_name'_kd_peaks.txt' $ref $condition_name'_kd_combined_diff_analysis_motifOutput/' -size 200 -bg $condition_name'_bg_peaks.txt'
+findMotifsGenome.pl $condition_name'_ctr_peaks.txt' $ref $condition_name'_ctr_combined_diff_analysis_motifOutput/' -size 200 -bg $condition_name'_bg_peaks.txt'
+
 
 #findMotifsGenome.pl 'outputPeaks_2.txt' $ref 'combined_diff_analysis_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
 
