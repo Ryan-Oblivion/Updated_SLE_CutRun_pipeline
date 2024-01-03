@@ -19,13 +19,13 @@ module load r/gcc/4.3.1
 
 #singularity run /scratch/rj931/containers/r_container.sif
 
-#condition_name='mock'
+condition_name='mock'
 #condition_name='iav'
-condition_name='bleo'
+#condition_name='bleo'
 
-kd_tag_dir='store_normal_bam_files/454*bam_tag_dir/'
-ctr_tag_dir='store_normal_bam_files/455*bam_tag_dir/'
-bg_tag_dir='bg_sort_bam_files/461*bam_tag_dir'
+kd_tag_dir='store_normal_bam_files/merged_norm_bams/454*bam_tag_dir/'
+ctr_tag_dir='store_normal_bam_files/merged_norm_bams/455*bam_tag_dir/'
+bg_tag_dir='store_normal_bam_files/merged_norm_bams/461*bam_tag_dir'
 
 ref='/scratch/rj931/tf_sle_project/GRCh38.primary_assembly.genome.fa'
 
@@ -63,7 +63,6 @@ getDifferentialPeaksReplicates.pl -t $kd_tag_dir \
 
 annotatePeaks.pl 'outputPeaks_2.txt' $ref -gtf $gtf_genes > 'differential_peak_analysis/differential_'$condition_name'_peaks_annotated_kd_vs_ctr.tsv'
 
-
 # i jsut need to pool together all the target directories and then find motifs
 findPeaks $kd_tag_dir -style factor -o $condition_name'_kd_peaks.txt'
 findPeaks $ctr_tag_dir -style factor -o $condition_name'_ctr_peaks.txt'
@@ -72,8 +71,6 @@ findPeaks $bg_tag_dir -style factor -o $condition_name'_bg_peaks.txt'
 findMotifsGenome.pl $condition_name'_kd_peaks.txt' $ref $condition_name'_kd_combined_diff_analysis_motifOutput/' -size 200 -bg $condition_name'_bg_peaks.txt'
 findMotifsGenome.pl $condition_name'_ctr_peaks.txt' $ref $condition_name'_ctr_combined_diff_analysis_motifOutput/' -size 200 -bg $condition_name'_bg_peaks.txt'
 
-
-#findMotifsGenome.pl 'outputPeaks_2.txt' $ref 'combined_diff_analysis_motifOutput/' -size 200 -bg $bam_bg'_bg_peaks.txt' 
 
 # store_normal_bam_files/454*peaks.txt
 # store_normal_bam_files/455*peaks.txt

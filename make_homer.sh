@@ -2,44 +2,45 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --partition=cm
-#SBATCH --time=10:00:00
-#SBATCH --mem=30GB
+#SBATCH --time=5:00:00
+#SBATCH --mem=20GB
 #SBATCH --job-name=homer
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=rj931@nyu.edu
 #SBATCH --output=slurm_%j.out
-#SBATCH --array=1-6
+#SBATCH --array=1-3
 
 
 # THIS IS A TEST TO USE THE IgG AS THE CONTROL INSTEAD OF THE CONTROL. I WILL DO THIS TWICE ALSO
 # ONCE FOR KNOCKDOWN WITH IGG AND THEN WITH CONTROL AND IGG
 
-cd store_normal_bam_files
+cd store_normal_bam_files/merged_norm_bams
 
 #rm kd_bam.txt ctr_bam.txt bg_region.txt kd_ctr_bg_bam.txt
 
 
-ls 454*.bam > kd_bam.txt
-ls 455*.bam > ctr_bam.txt
-ls ../bg_sort_bam_files/*.bam > bg_region.txt
-paste kd_bam.txt ctr_bam.txt bg_region.txt > kd_ctr_bg_bam.txt
+#ls 454*.bam > kd_bam.txt
+#ls 455*.bam > ctr_bam.txt
+#ls ../bg_sort_bam_files/*.bam > bg_region.txt
+#paste kd_bam.txt ctr_bam.txt bg_region.txt > kd_ctr_bg_bam.txt
 
-path_to_bg='../bg_sort_bam_files/'
+#path_to_bg='../bg_sort_bam_files/'
 
-pair_bams='kd_ctr_bg_bam.txt'
+pair_bams='kd_ctr_bg_merged_bam.txt'
 
 line="$(less "$pair_bams" | head -n ${SLURM_ARRAY_TASK_ID} | tail -n 1)"
 bam_kd="$(printf "%s" "${line}"| cut -f1)"
 bam_ctr="$(printf "%s" "${line}"| cut -f2)"
 bam_bg="$(printf "%s" "${line}"| cut -f3)"
 
+
 module load homer/4.11
 module load samtools/intel/1.14
 
+
 makeTagDirectory $bam_kd'_tag_dir/' $bam_kd -tbp 1
 makeTagDirectory $bam_ctr'_tag_dir/' $bam_ctr -tbp 1
-makeTagDirectory $bam_bg'_tag_dir/' $path_to_bg$bam_bg -tbp 1
+makeTagDirectory $bam_bg'_tag_dir/' $bam_bg -tbp 1
 
 
 # here are the changes. targets are kd and ctr tag directories, while in both the input is the IgG tag directories
@@ -74,8 +75,9 @@ pos2bed.pl $bam_bg'_bg_peaks.txt' > $bam_bg'_bg_peakfile.bed'
 
 
 
+
 echo $bam_bg
-echo $path_to_bg$bam_bg
+echo $bam_bg
 
 #ref="/scratch/work/courses/BI7653/hw3.2023/hg38/ref_genome"
 #ref="/scratch/work/courses/BI7653/hw3.2023/hg38/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa" 
@@ -107,6 +109,28 @@ annotatePeaks.pl  $bam_ctr'_peaks.txt' $ref -gtf $gtf_genes > $bam_ctr'_annotate
 
 mv $bam_kd'_annotated.tsv' $bam_ctr'_annotated.tsv' annotated_genes_ds 
 
+
+
+# now i want to make a bigwig file 
+#index the bam files first
+
+samtools index $bam_kd
+
+samtools index $bam_ctr 
+
+samtools index $bam_bg 
+
+module load  deeptools/3.5.0
+
+# want to normalize using SES size estimation scaling
+
+bamCompare --scaleFactorsMethod SES -b1 $bam_kd -b2 $bam_ctr -o $bam_kd'_'$bam_ctr'.bw'
+
+bamCoverage -b $bam_kd -o $bam_kd'.bw'
+
+bamCoverage -b $bam_ctr -o $bam_ctr'.bw'
+
+bamCoverage -b $bam_bg -o $bam_bg'.bw'
 
 ##############
 # test

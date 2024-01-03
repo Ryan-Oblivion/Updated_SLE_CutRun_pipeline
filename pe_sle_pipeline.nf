@@ -251,6 +251,99 @@ paste kd_bam.txt ctr_bam.txt > kd_ctr_bam.txt
 }
 
 
+process merge_tech_replicates {
+
+    publishDir "${params.outdir4}/merged_norm_bams", mode: 'copy', pattern: "*merged.bam"
+    
+    publishDir "${params.outdir3}/merged_bg_bams", mode: 'copy', pattern: "${merged_bg_bams}"
+
+    input:
+    tuple val(key_norm), path(bams_tuple)
+    
+
+    output:
+
+    path "${merged_bams_norm}", emit: merged_norm_bams
+    
+
+    script:
+
+    merged_bams_norm = "${key_norm}.merged.bam"
+    
+
+    """
+
+    module load $SAMTOOLS
+
+    samtools merge -o ${merged_bams_norm} ${bams_tuple[0]} ${bams_tuple[1]}
+
+   
+
+
+    """
+
+}
+
+
+process merge_bg_replicates {
+
+    publishDir "${params.outdir3}/merged_norm_bams", mode: 'copy', pattern: "${merged_bg_bams}"
+
+    input:
+
+    tuple val(key_bg), path(bg_bams_tuple)
+
+    output:
+
+    path "${merged_bg_bams}", emit: merged_bams_bg
+
+    script:
+
+    merged_bg_bams = "${key_bg}.merged.bam"
+
+    """
+
+    module load $SAMTOOLS
+
+    samtools merge -o ${merged_bg_bams} ${bg_bams_tuple[0]} ${bg_bams_tuple[1]}
+
+    """
+
+
+}
+
+process make_txt_files {
+
+    publishDir "${params.outdir4}/merged_norm_bams", mode: 'copy', pattern: "*.txt"
+
+    input:
+    val kd_bams
+    val ctr_bams
+    val bg_merged_bams
+
+
+
+    output:
+
+    path "kd_ctr_bg_merged_bam.txt", emit: text_file_merged_bams
+
+    script:
+
+    """
+
+    echo "${kd_bams.join("\n")}" > merged_norm_kd_bams.txt
+
+    echo "${ctr_bams.join("\n")}" > merged_norm_ctr_bams.txt
+
+    echo "${bg_merged_bams.join("\n")}" > merged_bg_bams.txt
+
+
+    paste merged_norm_kd_bams.txt merged_norm_ctr_bams.txt merged_bg_bams.txt > kd_ctr_bg_merged_bam.txt
+
+
+    """
+}
+
 //bam_tuple = kd_bam_list.combine(ctr_bam_list)
 
 
@@ -283,6 +376,71 @@ bg_fastp(bg_reads)
 bwa_index(ref)
 bwa(ref, filt_pe, bwa_index.out.bwa_index_end)
 bg_bwa(ref, bg_filt, bwa_index.out.bwa_index_end)
+
+
+bwa.out.bam_file
+.map{
+    file ->
+    def basename = file.baseName
+    def key = basename.replaceAll(/_L00[12]*/, '')
+    return tuple(key, file)
+}
+.groupTuple()
+.set { bams_tuple }
+
+bg_bwa.out.bg_bam
+.map{ 
+    file ->
+    def basename = file.baseName
+    def key = basename.replaceAll(/_L00[12]*/, '')
+    return tuple(key, file)
+}
+.groupTuple()
+.set { bg_bams_tuple}
+
+merge_tech_replicates(bams_tuple)
+
+
+merge_bg_replicates(bg_bams_tuple)
+
+
+merge_tech_replicates.out.merged_norm_bams
+.map{ 
+    file ->
+    return file.name
+}
+.set { bam_names_norm_collected}
+
+
+bam_names_norm_collected
+.filter {it.startsWith('454') || it.startsWith('460')} 
+.set { kd_bams}
+
+bam_names_norm_collected
+.filter {it.startsWith('455') || it.startsWith('461')}
+.set { ctr_bams}
+
+
+merge_bg_replicates.out.merged_bams_bg
+.map{
+    file ->
+    return file.name
+}
+.set { bam_bg_names }
+
+kd_bams_collected = kd_bams.collect()
+ctr_bams_collected = ctr_bams.collect()
+bg_bams_collected = bam_bg_names.collect()
+
+kd_bams_tuple = kd_bams_collected.map { list -> list.sort { it.split('-')[2].split('_')[0].substring(1).toInteger() }}
+ctr_bams_tuple = ctr_bams_collected.map { list -> list.sort { it.split('-')[2].split('_')[0].substring(1).toInteger() }}
+bg_bams_tuple = bg_bams_collected.map { list -> list.sort { it.split('-')[2].split('_')[0].substring(1).toInteger() }}
+
+
+
+make_txt_files(kd_bams_tuple, ctr_bams_tuple, bg_bams_tuple)
+
+
 //homer( bam_tuple)
 //fastp.out.fastp_out_f.view()
 //fastp.out.fastp_out_r.view()

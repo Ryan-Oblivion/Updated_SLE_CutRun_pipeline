@@ -31,24 +31,6 @@
 # filts = "filt_files/45*-Bleo*cut*_{R1,R2}*.filt*"
 # bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
 
-#####################
-# IRF1 input parameters
-
-# IRF1 MOCK READS
-#  params.reads = "/scratch/rj931/tf_sle_project/all_sle_data/46*-Mock*cut*_{R1,R2}*.fastq.gz"
-# params.filts = "filt_files/46*-Mock*cut*_{R1,R2}*.filt*"
-# params.bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
-
-# IRF1 IAV READS
-# reads = "/scratch/rj931/tf_sle_project/all_sle_data/46*-IAV*cut*_{R1,R2}*.fastq.gz"
-# filts = "filt_files/46*-IAV*cut*_{R1,R2}*.filt*"
-# bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
-
-# IRF1 BLEO READS
-# reads = "/scratch/rj931/tf_sle_project/all_sle_data/46*-Bleo*cut*_{R1,R2}*.fastq.gz"
-# filts = "filt_files/46*-Bleo*cut*_{R1,R2}*.filt*"
-# bg_regions = "/scratch/rj931/tf_sle_project/all_sle_data/461-IgG*cut*_{R1,R2}*.fastq.gz"
-
 module purge
 
 module load nextflow/23.04.1
@@ -57,8 +39,8 @@ module load nextflow/23.04.1
 # so now that they exist the pipeline can move on, how to fix this and make it run
 # or check the directories again instead
 
-nextflow run -resume pe_sle_pipeline.nf  --reads "/scratch/rj931/tf_sle_project/all_sle_data/45*-Bleo*cut*_{R1,R2}*.fastq.gz" --filts "filt_files/45*-Bleo*cut*_{R1,R2}*.filt*"
-nextflow run -resume pe_sle_pipeline.nf  --reads "/scratch/rj931/tf_sle_project/all_sle_data/45*-Bleo*cut*_{R1,R2}*.fastq.gz" --filts "filt_files/45*-Bleo*cut*_{R1,R2}*.filt*"
+nextflow run -resume pe_sle_pipeline.nf  
+#nextflow run -resume pe_sle_pipeline.nf
 
 
 
@@ -93,5 +75,6 @@ multiqc -force --file-list fastqc_files.txt --filename 'multiqc_report.html'
 #sbatch homer_anno_combined.sh
 
 # this allows for the second script to only run after the first is finished
-JOBID1=$(sbatch --parsable --array=1-6 make_homer.sh)
+
+JOBID1=$(sbatch --parsable --array=1-3 make_homer.sh)
 sbatch --dependency=afterok:$JOBID1 homer_anno_combined.sh
